@@ -1,0 +1,45 @@
+{
+	"name": "Morden",
+	"engine": {
+		"Ethash": {
+			"params": {
+				"gasLimitBoundDivisor": "0x0400",
+				"minimumDifficulty": "0x020000",
+				"difficultyBoundDivisor": "0x0800",
+				"durationLimit": "0x0d",
+				"blockReward": "0x4563918244F40000",
+				"registrar": "",
+				"frontierCompatibilityModeLimit": 0,
+                                "daoRescueSoftFork": false
+			}
+		}
+	},
+	"params": {
+		"accountStartNonce": "0x0100000",
+		"maximumExtraDataSize": "0x20",
+		"minGasLimit": "0x1388",
+		"networkID" : "0x1337"
+	},
+	"genesis": {
+		"seal": {
+			"ethereum": {
+				"nonce": "0xdeadbeefdeadbeef",
+				"mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+			}
+		},
+		"difficulty": "0x001",
+		"author": "0x0000000000000000000000000000000000000000",
+		"timestamp": "0x00",
+		"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"extraData": "0x",
+		"gasLimit": "0x8000000"
+	},
+	"nodes": [
+	],
+	"accounts": {
+		"0000000000000000000000000000000000000001": { "balance": "1", "nonce": "1048576", "builtin": { "name": "ecrecover", "pricing": { "linear": { "base": 3000, "word": 0 } } } },
+		"0000000000000000000000000000000000000002": { "balance": "1", "nonce": "1048576", "builtin": { "name": "sha256", "pricing": { "linear": { "base": 60, "word": 12 } } } },
+		"0000000000000000000000000000000000000003": { "balance": "1", "nonce": "1048576", "builtin": { "name": "ripemd160", "pricing": { "linear": { "base": 600, "word": 120 } } } },
+		"0000000000000000000000000000000000000004": { "balance": "1", "nonce": "1048576", "builtin": { "name": "identity", "pricing": { "linear": { "base": 15, "word": 3 } } } }
+	}
+}

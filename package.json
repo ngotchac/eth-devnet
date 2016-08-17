@@ -1,0 +1,34 @@
+{
+  "name": "eth-devnet",
+  "version": "0.0.1",
+  "description": "Easily create an complete Ethereum Network for development purposes.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ngotchac/eth-devnet.git"
+  },
+  "keywords": [
+    "ethereum",
+    "dev",
+    "network",
+    "parity",
+    "ethminer"
+  ],
+  "author": "Nicolas Gotchac <ngotchac@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ngotchac/eth-devnet/issues"
+  },
+  "homepage": "https://github.com/ngotchac/eth-devnet#readme",
+  "dependencies": {
+    "archiver": "^1.0.1",
+    "commander": "^2.9.0",
+    "dockerode": "^2.3.0",
+    "npmlog": "^4.0.0",
+    "temp": "^0.8.3",
+    "through2": "^2.0.1"
+  }
+}

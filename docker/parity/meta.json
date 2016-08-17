@@ -1,0 +1,6 @@
+{
+    "version": 2,
+    "files": [
+        { "path": "../morden.json", "name": "morden.json" }
+    ]
+}
