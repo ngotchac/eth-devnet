@@ -16,7 +16,7 @@ temp.track();
 
 let docker = new Docker();
 
-module.exports = class DockerUtils {
+module.exports = class DockerImages {
 
     static getImages() {
         return IMAGES.map(name => ({
@@ -27,10 +27,10 @@ module.exports = class DockerUtils {
     }
 
     static checkImages() {
-        var images = DockerUtils.getImages();
+        var images = DockerImages.getImages();
 
         return Promise
-            .all(images.map(i => DockerUtils.getImageMeta(i.folder)))
+            .all(images.map(i => DockerImages.getImageMeta(i.folder)))
             .then(metas => {
                 return new Promise((resolve, reject) => {
                     docker.listImages((err, dImages) => {
@@ -82,14 +82,14 @@ module.exports = class DockerUtils {
                         let p = Promise.resolve();
 
                         toRemove.forEach(dImage => {
-                            p = p.then(() => DockerUtils.removeImage(dImage));
+                            p = p.then(() => DockerImages.removeImage(dImage));
                         });
 
                         toBuild.forEach(image => {
                             let meta = metas.find(m => m.folder === image.folder);
                             
                             console.log(image, meta);
-                            p = p.then(() => DockerUtils.createImage(image, meta));
+                            p = p.then(() => DockerImages.createImage(image, meta));
                         });
 
                         return p
@@ -227,12 +227,12 @@ module.exports = class DockerUtils {
         // each Image to create
         var p = Promise.resolve();
 
-        DockerUtils
+        DockerImages
             .getImages()
             .forEach(image => {
                 p = p
-                    .then(() => DockerUtils.getImageMeta(image.folder))
-                    .then(meta => DockerUtils.createImage(image, meta));
+                    .then(() => DockerImages.getImageMeta(image.folder))
+                    .then(meta => DockerImages.createImage(image, meta));
             });
 
         return p;
