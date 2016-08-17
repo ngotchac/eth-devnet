@@ -87,8 +87,6 @@ module.exports = class DockerImages {
 
                         toBuild.forEach(image => {
                             let meta = metas.find(m => m.folder === image.folder);
-                            
-                            console.log(image, meta);
                             p = p.then(() => DockerImages.createImage(image, meta));
                         });
 
@@ -185,7 +183,7 @@ module.exports = class DockerImages {
                         info.path,
                         {
                             t: image.tag,
-                            labels: { version:  meta.version.toString() }
+                            labels: {version: meta.version.toString()}
                         },
                         (err, response) =>{
                             if (err) return reject(err);
@@ -200,7 +198,7 @@ module.exports = class DockerImages {
                                     } else if (data.error) {
                                         return reject(data.error);
                                     } else {
-                                        console.log('no stream data', chunk.toString());
+                                        log.warn(LOG_PREFIX, 'no stream data', chunk.toString());
                                     }
 
                                     cb();
@@ -238,4 +236,4 @@ module.exports = class DockerImages {
         return p;
     }
 
-}
+};

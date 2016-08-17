@@ -34,15 +34,12 @@ program
             log.error('', 'The client should be one of this list: ' + CLIENTS.join(', '), `("${client}" given)`);
             process.exit(1);
         }
-
-        console.log('start', nodes);
     });
 
 program
     .command('stop')
     .description('stop the current Etehereum Nodes Network')
     .action(() => {
-        console.log('stop', cmd, options);
     });
 
 program
@@ -51,7 +48,7 @@ program
     .action(() => {
         DockerImages
             .checkImages()
-            .then(() => console.log('Success'))
+            .then(() => log.info(LOG_PREFIX, 'Success'))
             .catch(e => log.error(LOG_PREFIX, e));
     });
 
