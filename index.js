@@ -2,6 +2,7 @@ let program = require('commander'),
     log = require('npmlog');
 
 let DockerImages = require('./src/docker-images');
+let DockerNetwork = require('./src/docker-network');
 let DockerPs = require('./src/docker-ps');
 
 const LOG_PREFIX = 'eth-devnet/main';
@@ -54,8 +55,15 @@ program
     .action(() => {
         DockerImages
             .checkImages()
+            .then(() => DockerNetwork.checkNetwork())
             .then(() => log.info(LOG_PREFIX, 'everything is setup and good to go!'))
             .catch(e => log.error(LOG_PREFIX, e));
+    });
+
+program
+    .command('help', { isDefault: true })
+    .action(() => {
+        program.outputHelp();
     });
 
 program.parse(process.argv);

@@ -5,7 +5,6 @@
     ],
     "Cmd": [
         "--chain", "/build/morden.json",
-        "-d", "/parity",
         "--keys-path", "/parity/keys",
         "--jsonrpc-cors", "\"*\""
     ]

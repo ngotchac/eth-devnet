@@ -3,6 +3,7 @@ let Docker = require('dockerode'),
     log = require('npmlog');
 
 let DockerImages = require('./docker-images');
+let DockerNetwork = require('./docker-network');
 
 let docker = new Docker();
 
@@ -50,26 +51,29 @@ module.exports = class DockerPs {
             [ '--author', author ]
         );
 
+        let mainNodeIp;
+
         // Start first Node after CleanUp
         return DockerPs
             .cleanUp()
-            .then(() => {
-                let ip = '172.26.0.2';
+            .then(() => DockerNetwork.getIpAddress())
+            .then(ip => {
+                log.info(LOG_PREFIX, 'starting the first node with ip ' + ip);
 
-                log.info(LOG_PREFIX, 'starting the first node');
+                mainNodeIp = ip;
 
                 return DockerPs
-                    .startContainer({
+                    .startContainer(ip, {
                         Image: nodeImage.tag,
                         Cmd: [].concat(
                             nodeCmd,
                             [
+                                '-d', '/parity',
                                 '--jsonrpc-interface', `${ip}`
                             ]
                         ),
                         HostConfig: {
-                            Binds: ['/home/nicolas/.parity:/parity'],
-                            NetworkMode: 'ethereum'
+                            Binds: ['/home/nicolas/.parity:/parity']
                         },
                         name: CONTAINER_PREFIX + nodeImage.name + '.0'
                     });
@@ -82,47 +86,50 @@ module.exports = class DockerPs {
 
                 // Start all nodes
                 for (let i = 2; i <= nodes; i++) {
-                    p = p.then(() => {
-                        log.info(LOG_PREFIX, 'starting node #' + i);
+                    p = p
+                        .then(() => DockerNetwork.getIpAddress())
+                        .then(ip => {
+                            log.info(LOG_PREFIX, 'starting node #' + i);
 
-                        let ip = '172.26.0.' + ( i+1 );
-
-                        return DockerPs
-                            .startContainer({
-                                Image: nodeImage.tag,
-                                Cmd: [].concat(
-                                    nodeCmd,
-                                    [
-                                        '--jsonrpc-interface', `${ip}`,
-                                        '--bootnodes', uri
-                                    ]
-                                ),
-                                HostConfig: {
-                                    Binds: ['/home/nicolas/.parity:/parity'],
-                                    NetworkMode: 'ethereum'
-                                },
-                                name: CONTAINER_PREFIX + nodeImage.name + '.' + ( i-1 )
-                            });
-                    });
+                            return DockerPs
+                                .startContainer(ip, {
+                                    Image: nodeImage.tag,
+                                    Cmd: [].concat(
+                                        nodeCmd,
+                                        [
+                                            '--jsonrpc-interface', `${ip}`,
+                                            '--bootnodes', uri
+                                        ]
+                                    ),
+                                    HostConfig: {
+                                        Binds: ['/home/nicolas/.parity:/parity']
+                                    },
+                                    name: CONTAINER_PREFIX + nodeImage.name + '.' + ( i-1 )
+                                });
+                        }); 
                 }
 
                 return p;
             })
-            .then(() => {
+            .then(() => DockerNetwork.getIpAddress())
+            .then(ip => {
                 // Start the miner
                 log.info(LOG_PREFIX, 'starting the miner');
 
                 return DockerPs
-                    .startContainer({
+                    .startContainer(ip, {
                         Image: minerImage.tag,
+                        User: 'ubuntu',
                         Cmd: [
-
+                            '-C', '-t', '1',
+                            '-F', mainNodeIp + ':8545'
                         ],
                         HostConfig: {
-                            Binds: ['/home/nicolas/.parity:/parity'],
-                            NetworkMode: 'ethereum'
+                            CpuPeriod: 100000,
+                            CpuQuota: 25000,
+                            Binds: ['/home/nicolas/.ethash:/home/ubuntu/.ethash']
                         },
-                        name: CONTAINER_PREFIX + nodeImage.name + '.' + ( i-1 )
+                        name: CONTAINER_PREFIX + minerImage.name
                     });
             });
 
@@ -166,8 +173,27 @@ module.exports = class DockerPs {
         });
     }
 
-    static startContainer(config) {
+    static startContainer(ip, config) {
+        log.info(
+            LOG_PREFIX,
+            'starting container', config.name,
+            'with params', config.Cmd.join(' ')
+        );
+
         return new Promise((resolve, reject) => {
+            let networkName = DockerNetwork.getName();
+
+            let netobj = { EndpointsConfig: {} };
+
+            netobj.EndpointsConfig[networkName] = {
+                IPAMConfig: {
+                    IPv4Address: ip
+                }
+            };
+
+            config.NetworkingConfig = netobj;
+            config.HostConfig.NetworkMode = networkName;
+
             docker.createContainer(config, (err, container) => {
                 if (err) return reject(err);
 

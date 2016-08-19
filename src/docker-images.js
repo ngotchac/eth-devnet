@@ -120,20 +120,17 @@ module.exports = class DockerImages {
     static getImageMeta(folder) {
         let meta = require(path.resolve(folder + '/meta.json'));
 
-        let res = {
-            version: meta.version,
-            folder: folder
-        };
+        meta.folder = folder;
 
         if (meta.files) {
-            res.files = meta.files
+            meta.files = meta.files
                 .map(file => ({
                     path: path.resolve(folder + '/' + file.path),
                     name: file.name
                 }));
         }
 
-        return res;
+        return meta;
     }
 
     static createImage(image, meta) {
