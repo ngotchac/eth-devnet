@@ -19,83 +19,89 @@ let docker = new Docker();
 module.exports = class DockerImages {
 
     static getImages() {
-        return IMAGES.map(name => ({
-            name: name,
-            tag: TAG_PREFIX + name,
-            folder: path.resolve(__dirname + '/../docker/' + name)
-        }));
+        return IMAGES.map(name => {
+            let folder = path.resolve(__dirname + '/../docker/' + name);
+
+            return {
+                name: name,
+                tag: TAG_PREFIX + name,
+                folder: folder,
+                meta: DockerImages.getImageMeta(folder)
+            };
+        });
     }
 
     static checkImages() {
         var images = DockerImages.getImages();
 
-        return Promise
-            .all(images.map(i => DockerImages.getImageMeta(i.folder)))
-            .then(metas => {
-                return new Promise((resolve, reject) => {
-                    docker.listImages((err, dImages) => {
-                        if (err) return reject(err);
+        return new Promise((resolve, reject) => {
+            docker.listImages((err, dImages) => {
+                if (err) return reject(err);
 
-                        let toBuild = images,
-                            toRemove = [];
+                let toBuild = images,
+                    toRemove = [];
 
-                        let regex = new RegExp(`^${TAG_PREFIX}`, 'i'),
-                            nameRegex = new RegExp(`^${TAG_PREFIX}([^:]+)`, 'i');
+                let regex = new RegExp(`^${TAG_PREFIX}`, 'i'),
+                    nameRegex = new RegExp(`^${TAG_PREFIX}([^:]+)`, 'i');
 
-                        dImages
-                            .forEach(dImage => {
-                                let tag = dImage.RepoTags[0];
+                dImages
+                    .forEach(dImage => {
+                        let tag = dImage.RepoTags[0];
 
-                                // If it's not an eth-devnet image,
-                                // skip
-                                if (!regex.test(tag)) return false;
+                        // If it's not an eth-devnet image,
+                        // skip
+                        if (!regex.test(tag)) return false;
 
-                                let name = nameRegex.exec(tag)[1];
-                                let image = images.find(i => i.name === name);
+                        let name = nameRegex.exec(tag)[1];
+                        let image = images.find(i => i.name === name);
 
-                                // If no corresponding image, remove it
-                                if (!image) {
-                                    toRemove.push(dImage);
-                                    return false;
-                                }
-
-                                let meta = metas.find(m => m.folder === image.folder);
-
-                                // If no or lower version, remove it
-                                let version = dImage.Labels.version;
-                                if (!version || parseInt(version) < meta.version) {
-                                    toRemove.push(dImage);
-                                    return false;
-                                }
-
-                                // Else, keep the image, remove it from
-                                // the `toBuild` array
-                                toBuild = toBuild.filter(i => i.name !== image.name);
-                            });
-
-                        if (toRemove.length === 0 && toBuild.length === 0) {
-                            log.info(LOG_PREFIX, `all the images are up-to-date`);
-                        } else {
-                            log.info(LOG_PREFIX, `removing ${toRemove.length} images and building ${toBuild.length} new images...`);
+                        // If no corresponding image, remove it
+                        if (!image) {
+                            toRemove.push(dImage);
+                            return false;
                         }
 
-                        let p = Promise.resolve();
+                        let meta = image.meta;
 
-                        toRemove.forEach(dImage => {
-                            p = p.then(() => DockerImages.removeImage(dImage));
-                        });
+                        // If no or lower version, remove it
+                        let version = dImage.Labels.version;
+                        if (!version || parseInt(version) < meta.version) {
+                            toRemove.push(dImage);
+                            return false;
+                        }
 
-                        toBuild.forEach(image => {
-                            let meta = metas.find(m => m.folder === image.folder);
-                            p = p.then(() => DockerImages.createImage(image, meta));
-                        });
-
-                        return p
-                            .then(d => resolve(d))
-                            .catch(e => reject(e));
+                        // Else, keep the image, remove it from
+                        // the `toBuild` array
+                        toBuild = toBuild.filter(i => i.name !== image.name);
                     });
+
+                if (toRemove.length === 0 && toBuild.length === 0) {
+                    log.info(LOG_PREFIX, `all the images are up-to-date`);
+                } else {
+                    log.info(LOG_PREFIX, `removing ${toRemove.length} images and building ${toBuild.length} new images...`);
+                }
+
+                let p = Promise.resolve();
+
+                if (toRemove.length > 0) {
+                    let DockerPs = require('./docker-ps');
+                    p = p.then(() => DockerPs.cleanUp());
+                }
+
+                toRemove.forEach(dImage => {
+                    p = p.then(() => DockerImages.removeImage(dImage));
                 });
+
+                toBuild.forEach(image => {
+                    let meta = image.meta;
+                    p = p.then(() => DockerImages.createImage(image, meta));
+                });
+
+                return p
+                    .then(d => resolve(d))
+                    .catch(e => reject(e));
             });
+        });
     }
 
     static removeImage(dImage) {
@@ -112,32 +118,22 @@ module.exports = class DockerImages {
     }
 
     static getImageMeta(folder) {
-        return new Promise((resolve, reject) => {
-            fs.readFile(path.resolve(folder + '/meta.json'), (err, data) => {
-                if (err) return reject(err);
+        let meta = require(path.resolve(folder + '/meta.json'));
 
-                try {
-                    let meta = JSON.parse(data);
+        let res = {
+            version: meta.version,
+            folder: folder
+        };
 
-                    let res = {
-                        version: meta.version,
-                        folder: folder
-                    };
+        if (meta.files) {
+            res.files = meta.files
+                .map(file => ({
+                    path: path.resolve(folder + '/' + file.path),
+                    name: file.name
+                }));
+        }
 
-                    if (meta.files) {
-                        res.files = meta.files
-                            .map(file => ({
-                                path: path.resolve(folder + '/' + file.path),
-                                name: file.name
-                            }));
-                    }
-                    
-                    return resolve(res);
-                } catch (e) {
-                    return reject(e);
-                }
-            });
-        });
+        return res;
     }
 
     static createImage(image, meta) {
@@ -218,22 +214,6 @@ module.exports = class DockerImages {
                 });
             });
         });
-    }
-
-    static createImages() {
-        // Create a serial chain of Promises for
-        // each Image to create
-        var p = Promise.resolve();
-
-        DockerImages
-            .getImages()
-            .forEach(image => {
-                p = p
-                    .then(() => DockerImages.getImageMeta(image.folder))
-                    .then(meta => DockerImages.createImage(image, meta));
-            });
-
-        return p;
     }
 
 };

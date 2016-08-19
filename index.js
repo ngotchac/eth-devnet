@@ -32,6 +32,10 @@ program
     .command('stop')
     .description('stop the current Etehereum Nodes Network')
     .action(() => {
+        DockerPs
+            .cleanUp()
+            .then(() => log.info(LOG_PREFIX, 'Success'))
+            .catch(e => log.error(LOG_PREFIX, e));
     });
 
 program

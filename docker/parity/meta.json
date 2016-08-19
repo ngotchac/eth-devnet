@@ -1,6 +1,12 @@
 {
-    "version": 2,
+    "version": 3,
     "files": [
         { "path": "../morden.json", "name": "morden.json" }
+    ],
+    "Cmd": [
+        "--chain", "/build/morden.json",
+        "-d", "/parity",
+        "--keys-path", "/parity/keys",
+        "--jsonrpc-cors", "\"*\""
     ]
 }

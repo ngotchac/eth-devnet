@@ -43,23 +43,30 @@ module.exports = class DockerPs {
         let nodeImage = images.find(i => i.name === client);
         let minerImage = images.find(i => i.name === 'ethminer');
 
+        let author = '31f25b9CabB9803f5e36BD609ff1AFE5A779A7Ca';
+
+        let nodeCmd = [].concat(
+            nodeImage.meta.Cmd || [],
+            [ '--author', author ]
+        );
+
         // Start first Node after CleanUp
         return DockerPs
             .cleanUp()
             .then(() => {
                 let ip = '172.26.0.2';
 
+                log.info(LOG_PREFIX, 'starting the first node');
+
                 return DockerPs
                     .startContainer({
                         Image: nodeImage.tag,
-                        Cmd: [
-                            '--chain', '/build/morden.json',
-                            '-d', '/parity',
-                            '--keys-path', '/parity/keys',
-                            '--jsonrpc-cors', '"*"',
-                            '--author', '31f25b9CabB9803f5e36BD609ff1AFE5A779A7Ca',
-                            '--jsonrpc-interface', `${ip}`
-                        ],
+                        Cmd: [].concat(
+                            nodeCmd,
+                            [
+                                '--jsonrpc-interface', `${ip}`
+                            ]
+                        ),
                         HostConfig: {
                             Binds: ['/home/nicolas/.parity:/parity'],
                             NetworkMode: 'ethereum'
@@ -70,15 +77,60 @@ module.exports = class DockerPs {
             .then(container => DockerPs.getNodeURI(container))
             .then(uri => {
                 log.info(LOG_PREFIX, 'got main node URI: ' + uri);
+
+                let p = Promise.resolve();
+
+                // Start all nodes
+                for (let i = 2; i <= nodes; i++) {
+                    p = p.then(() => {
+                        log.info(LOG_PREFIX, 'starting node #' + i);
+
+                        let ip = '172.26.0.' + ( i+1 );
+
+                        return DockerPs
+                            .startContainer({
+                                Image: nodeImage.tag,
+                                Cmd: [].concat(
+                                    nodeCmd,
+                                    [
+                                        '--jsonrpc-interface', `${ip}`,
+                                        '--bootnodes', uri
+                                    ]
+                                ),
+                                HostConfig: {
+                                    Binds: ['/home/nicolas/.parity:/parity'],
+                                    NetworkMode: 'ethereum'
+                                },
+                                name: CONTAINER_PREFIX + nodeImage.name + '.' + ( i-1 )
+                            });
+                    });
+                }
+
+                return p;
+            })
+            .then(() => {
+                // Start the miner
+                log.info(LOG_PREFIX, 'starting the miner');
+
+                return DockerPs
+                    .startContainer({
+                        Image: minerImage.tag,
+                        Cmd: [
+
+                        ],
+                        HostConfig: {
+                            Binds: ['/home/nicolas/.parity:/parity'],
+                            NetworkMode: 'ethereum'
+                        },
+                        name: CONTAINER_PREFIX + nodeImage.name + '.' + ( i-1 )
+                    });
             });
 
-        // // Start all nodes
-        // for (let i = 0; i < nodes; i++) {
-
-        // }
     }
 
     static cleanUp() {
+        log.info(LOG_PREFIX, 'cleaning-up docker containers');
+
         return new Promise((resolve, reject) => {
             docker.listContainers({ all: true }, (err, containers) => {
                 if (err) return reject(err);
