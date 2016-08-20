@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Easily create an complete Ethereum Network for development purposes.",
   "main": "index.js",
+  "bin": {
+    "ethdevnet": "./bin/ethdevnet"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
