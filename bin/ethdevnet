@@ -1,0 +1,21 @@
+#!/usr/bin/node
+
+let program = require('commander');
+
+program
+    .version(require('../package.json').version)
+    .command('init', 'initialize the current machine with the Docker Images')
+    .command('start', 'start a new Etehereum Nodes Network for development')
+    .command('stop', 'stop the current Etehereum Nodes Network')
+    .command('status', 'get the current status of the Etehereum Nodes Network');
+
+
+// program
+//     .command('*', { isDefault: true })
+//     .action((cmd, args) => {
+//         console.log(cmd, args);
+//         program.help();
+//     });
+
+program.parse(process.argv);
+
