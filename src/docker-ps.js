@@ -206,8 +206,32 @@ module.exports = class DockerPs {
         });
     }
 
+    /**
+     * Get the running eth-devnet Docker containers
+     *
+     * @return {Promise}
+     */
+    static getContainers() {
+        return new Promise((resolve, reject) => {
+            docker.listContainers({ all: true }, (err, containers) => {
+                if (err) return reject(err);
+
+                let regex = new RegExp(CONTAINER_PREFIX, 'i');
+
+                let cts = containers.filter(c => regex.test(c.Names[0]));
+
+                let nodes = cts.filter(c => !/miner/i.test(c.Names[0]));
+                let miners = cts.filter(c => /miner/i.test(c.Names[0]));
+
+                return resolve({
+                    nodes, miners
+                });
+            });
+        });
+    }
+
     static getNodeURI(container) {
-        let regex = new RegExp('enode://[0-9a-zA-e]+@[0-9\.]+:[0-9+]', 'i');
+        let regex = new RegExp('enode://[0-9a-zA-e]+@[0-9\.]+:[0-9]+', 'i');
         let foundURI = false;
 
         return new Promise((resolve, reject) => {
