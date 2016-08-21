@@ -1,6 +1,6 @@
 {
   "name": "eth-devnet",
-  "version": "0.0.1",
+  "version": "0.5.0",
   "description": "Easily create an complete Ethereum Network for development purposes.",
   "main": "index.js",
   "bin": {
