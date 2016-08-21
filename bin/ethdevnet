@@ -1,13 +1,25 @@
 #!/usr/bin/node
 
-let program = require('commander');
+let program = require('commander'),
+    log = require('npmlog');
+
+const LOG_PREFIX = 'eth-devnet';
 
 program
     .version(require('../package.json').version)
     .command('init', 'initialize the current machine with the Docker Images')
     .command('accounts', 'manage your accounts')
+    .command('logs', 'print logs')
     .command('start', 'start a new Etehereum Nodes Network for development')
     .command('stop', 'stop the current Etehereum Nodes Network')
     .command('status', 'get the current status of the Etehereum Nodes Network');
 
 program.parse(process.argv);
+
+process.on('unhandledRejection', (reason, p) => {
+    log.error(LOG_PREFIX, p, reason);
+});
+
+process.on('uncaughtException', err => {
+    log.error(LOG_PREFIX, err);
+});

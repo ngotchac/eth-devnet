@@ -23,6 +23,74 @@ const DEFAULTS = {
 
 module.exports = class DockerPs {
 
+    static getLogs(container) {
+        const stream = require('stream');
+
+        let cont = docker.getContainer(container.Id);
+
+        return new Promise((resolve, reject) => {
+            cont.logs({ stdout: 1, stderr: 1, timestamps: 1 }, (err, response) => {
+                if (err) return reject(err);
+
+                var stdout = new stream.PassThrough();
+                var stderr = new stream.PassThrough();
+                cont.modem.demuxStream(response, stdout, stderr);
+
+                let logs = {
+                    stdout: '',
+                    stderr: ''
+                };
+
+                stdout
+                    .on('data', chunk => {
+                        logs.stdout += chunk;
+                    });
+
+                stderr
+                    .on('data', chunk => {
+                        logs.stderr += chunk;
+                    });
+
+                response
+                    .on('end', () => {
+                        let regex = /^([0-9\-]+T[0-9:\.]+Z) (.+)$/i;
+
+                        let out = logs.stdout
+                            .split('\n')
+                            .filter(l => regex.test(l))
+                            .map(l => {
+                                let regres = regex.exec(l);
+
+                                return {
+                                    time: new Date(regres[1]),
+                                    log: regres[2],
+                                    from: 'stdout'
+                                };
+                            });
+
+                        let err = logs.stderr
+                            .split('\n')
+                            .filter(l => regex.test(l))
+                            .map(l => {
+                                let regres = regex.exec(l);
+
+                                return {
+                                    time: new Date(regres[1]),
+                                    log: regres[2],
+                                    from: 'stderr'
+                                };
+                            });
+
+                        let sorted = []
+                            .concat(out, err)
+                            .sort((a, b) => a.time - b.time);
+
+                        resolve(sorted);
+                    });
+            });
+        });
+    }
+
     static start(config) {
         let nodes = config.nodes !== undefined ? config.nodes : DEFAULTS.nodes,
             miners = config.miners !== undefined ? config.miners : DEFAULTS.miners,
