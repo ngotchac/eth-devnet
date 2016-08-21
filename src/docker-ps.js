@@ -96,8 +96,8 @@ module.exports = class DockerPs {
             miners = config.miners !== undefined ? config.miners : DEFAULTS.miners,
             client = config.client !== undefined ? config.client : DEFAULTS.client;
 
-        if (!(nodes >= 1 && nodes <= 5)) {
-            log.error(LOG_PREFIX, 'The number of nodes must be between 1 and 5', `(${nodes} given)`);
+        if (!(nodes >= 1 && nodes <= 7)) {
+            log.error(LOG_PREFIX, 'The number of nodes must be between 1 and 7' `(${nodes} given)`);
             process.exit(1);
         }
 
@@ -122,7 +122,8 @@ module.exports = class DockerPs {
             [ '--author', author ]
         );
 
-        let mainNodeIp;
+        let ips = [];
+        let nodeUris = [];
 
         let parityDir = path.resolve(Utils.appDir + '/.parity');
         let ethashDir = path.resolve(Utils.appDir + '/.ethash');
@@ -137,7 +138,7 @@ module.exports = class DockerPs {
             .then(ip => {
                 log.info(LOG_PREFIX, 'starting the first node with ip ' + ip);
 
-                mainNodeIp = ip;
+                ips.push(ip);
 
                 return DockerPs
                     .startContainer(ip, {
@@ -155,18 +156,19 @@ module.exports = class DockerPs {
                         name: CONTAINER_PREFIX + nodeImage.name + '.0'
                     });
             })
-            .then(container => DockerPs.getNodeURI(container))
-            .then(uri => {
-                log.info(LOG_PREFIX, 'got main node URI: ' + uri);
-
-                let p = Promise.resolve();
+            .then(container => {
+                let p = Promise.resolve(container);
 
                 // Start all nodes
                 for (let i = 2; i <= nodes; i++) {
                     p = p
+                        .then(container => DockerPs.getNodeURI(container))
+                        .then(uri => nodeUris.push(uri))
                         .then(() => DockerNetwork.getIpAddress())
                         .then(ip => {
                             log.info(LOG_PREFIX, 'starting node #' + i);
+
+                            ips.push(ip);
 
                             return DockerPs
                                 .startContainer(ip, {
@@ -175,7 +177,7 @@ module.exports = class DockerPs {
                                         nodeCmd,
                                         [
                                             '--jsonrpc-interface', `${ip}`,
-                                            '--bootnodes', uri
+                                            '--bootnodes', nodeUris.join(',')
                                         ]
                                     ),
                                     HostConfig: {
@@ -188,26 +190,39 @@ module.exports = class DockerPs {
 
                 return p;
             })
-            .then(() => DockerNetwork.getIpAddress())
-            .then(ip => {
-                // Start the miner
-                log.info(LOG_PREFIX, 'starting the miner');
+            .then(() => {
+                let p = Promise.resolve();
 
-                return DockerPs
-                    .startContainer(ip, {
-                        Image: minerImage.tag,
-                        User: 'ubuntu',
-                        Cmd: [
-                            '-C', '-t', '1',
-                            '-F', mainNodeIp + ':8545'
-                        ],
-                        HostConfig: {
-                            CpuPeriod: 100000,
-                            CpuQuota: 25000,
-                            Binds: [ `${ethashDir}:/home/ubuntu/.ethash` ]
-                        },
-                        name: CONTAINER_PREFIX + minerImage.name
-                    });
+                // Start all miners
+                for (let i = 1; i <= miners; i++) {
+                    p = p
+                        .then(() => DockerNetwork.getIpAddress())
+                        .then(ip => {
+                            // Start the miner
+                            log.info(LOG_PREFIX, `starting the miner #${i}`);
+
+                            let nodeIpIdx = Math.floor(Math.random() * ips.length);
+                            let nodeIp = ips.splice(nodeIpIdx, 1)[0];
+
+                            return DockerPs
+                                .startContainer(ip, {
+                                    Image: minerImage.tag,
+                                    User: 'ubuntu',
+                                    Cmd: [
+                                        '-C', '-t', '1',
+                                        '-F', nodeIp + ':8545'
+                                    ],
+                                    HostConfig: {
+                                        CpuPeriod: 100000,
+                                        CpuQuota: 25000,
+                                        Binds: [ `${ethashDir}:/home/ubuntu/.ethash` ]
+                                    },
+                                    name: CONTAINER_PREFIX + minerImage.name + '.' + i
+                                });
+                        }); 
+                }
+
+                return p;
             });
 
     }

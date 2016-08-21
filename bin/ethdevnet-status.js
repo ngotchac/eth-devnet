@@ -63,6 +63,6 @@ function printLoop() {
             setTimeout(() => {
                 process.stdout.write('\033c');
                 printLoop();
-            }, 1000);
+            }, 500);
         });
 }
