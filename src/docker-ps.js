@@ -1,9 +1,12 @@
 let Docker = require('dockerode'),
     through2 = require('through2'),
+    path = require('path'),
+    mkdirp = require('mkdirp'),
     log = require('npmlog');
 
 let DockerImages = require('./docker-images');
 let DockerNetwork = require('./docker-network');
+let Utils = require('./utils');
 
 let docker = new Docker();
 
@@ -53,6 +56,12 @@ module.exports = class DockerPs {
 
         let mainNodeIp;
 
+        let parityDir = path.resolve(Utils.appDir + '/.parity');
+        let ethashDir = path.resolve(Utils.appDir + '/.ethash');
+
+        mkdirp.sync(parityDir);
+        mkdirp.sync(ethashDir);
+
         // Start first Node after CleanUp
         return DockerPs
             .cleanUp()
@@ -73,7 +82,7 @@ module.exports = class DockerPs {
                             ]
                         ),
                         HostConfig: {
-                            Binds: ['/home/nicolas/.parity:/parity']
+                            Binds: [ `${parityDir}:/parity` ]
                         },
                         name: CONTAINER_PREFIX + nodeImage.name + '.0'
                     });
@@ -102,7 +111,7 @@ module.exports = class DockerPs {
                                         ]
                                     ),
                                     HostConfig: {
-                                        Binds: ['/home/nicolas/.parity:/parity']
+                                        Binds: [ `${parityDir}:/parity` ]
                                     },
                                     name: CONTAINER_PREFIX + nodeImage.name + '.' + ( i-1 )
                                 });
@@ -127,7 +136,7 @@ module.exports = class DockerPs {
                         HostConfig: {
                             CpuPeriod: 100000,
                             CpuQuota: 25000,
-                            Binds: ['/home/nicolas/.ethash:/home/ubuntu/.ethash']
+                            Binds: [ `${ethashDir}:/home/ubuntu/.ethash` ]
                         },
                         name: CONTAINER_PREFIX + minerImage.name
                     });

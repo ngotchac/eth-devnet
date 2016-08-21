@@ -1,6 +1,12 @@
-let chalk = require('chalk');
+let chalk = require('chalk'),
+    path = require('path'),
+    os = require('os');
 
 module.exports = class Utils {
+
+    static get appDir() {
+        return path.resolve(os.homedir() + '/.eth-devnet');
+    }
 
     get clients() {
         return [ 'parity' ];
