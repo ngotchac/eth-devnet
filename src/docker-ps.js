@@ -1,5 +1,6 @@
 let Docker = require('dockerode'),
     through2 = require('through2'),
+    inquirer = require('inquirer'),
     path = require('path'),
     mkdirp = require('mkdirp'),
     log = require('npmlog');
@@ -115,12 +116,7 @@ module.exports = class DockerPs {
         let nodeImage = images.find(i => i.name === client);
         let minerImage = images.find(i => i.name === 'ethminer');
 
-        let author = '31f25b9CabB9803f5e36BD609ff1AFE5A779A7Ca';
-
-        let nodeCmd = [].concat(
-            nodeImage.meta.Cmd || [],
-            [ '--author', author ]
-        );
+        let nodeCmd = nodeImage.meta.Cmd || [];
 
         let ips = [];
         let nodeUris = [];
@@ -134,6 +130,18 @@ module.exports = class DockerPs {
         // Start first Node after CleanUp
         return DockerPs
             .cleanUp()
+            .then(() => (require('./accounts')).list())
+            .then(accounts => {
+                return inquirer.prompt({
+                    type: 'list',
+                    name: 'address',
+                    message: 'Choose an author address for mining',
+                    choices: accounts
+                });
+            })
+            .then(answer => {
+                nodeCmd = [].concat(nodeCmd, [ '--author', answer.address ]);
+            })
             .then(() => DockerNetwork.getIpAddress())
             .then(ip => {
                 log.info(LOG_PREFIX, 'starting the first node with ip ' + ip);
