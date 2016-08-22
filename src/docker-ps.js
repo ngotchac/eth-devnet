@@ -189,7 +189,7 @@ module.exports = class DockerPs {
                                         ]
                                     ),
                                     HostConfig: {
-                                        Binds: [ `${parityDir}:/parity` ]
+                                        Binds: []
                                     },
                                     name: CONTAINER_PREFIX + nodeImage.name + '.' + ( i-1 )
                                 });
