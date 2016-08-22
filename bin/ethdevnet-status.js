@@ -36,7 +36,14 @@ function printStatus() {
 
                 p = p
                     .then(() => Ethereum.getInfos(ip))
+                    .catch(e => {
+                        if (e.code !== 'ECONNREFUSED') {
+                            // throw e;
+                        }
+                    })
                     .then(infos => {
+                        if (!infos) return true;
+
                         infos.name = name;
                         infos.ip = ip;
 
@@ -56,14 +63,28 @@ if (program.F === undefined) {
     return printLoop();
 }
 
+var printedLines = 0;
+
 function printLoop() {
     printStatus()
         .then(toPrint => {
+            // Print new lines to erase previous lines
+            for (let i = 0; i < printedLines; i++) {
+                for (let j = 0; j < process.stdout.columns; j++) {
+                    process.stdout.write(' ');
+                }
+
+                process.stdout.write('\n');
+            }
+            process.stdout.moveCursor(0, -1 * printedLines);
+
+            printedLines = toPrint.split('\n').length;
             process.stdout.write(toPrint);
-            process.stdout.moveCursor(0, -1 * toPrint.split('\n').length + 1);
+            process.stdout.moveCursor(0, -1 * printedLines + 1);
 
             setTimeout(() => {
                 printLoop();
             }, 500);
-        });
+        })
+        .catch(e => log.error(LOG_PREFIX, e));
 }
