@@ -14,19 +14,18 @@ program
     .parse(process.argv);
 
 function printStatus() {
+    let toPrint = '';
+
     return DockerPs
         .getContainers()
         .then(containers => {
             let nodes = containers.nodes;
             let miners = containers.miners;
 
-            log.info(
-                LOG_PREFIX,
-                `${nodes.length} running node(s),`,
-                `and ${miners.length} running miner(s)`
-            );
+            toPrint += `${nodes.length} running node(s), `;
+            toPrint += `and ${miners.length} running miner(s)\n`;
 
-            process.stdout.write('\n');
+            toPrint += '\n';
 
             let netName = DockerNetwork.getName();
             let p = Promise.resolve();
@@ -41,27 +40,29 @@ function printStatus() {
                         infos.name = name;
                         infos.ip = ip;
 
-                        Utils.printNodeInfos(infos);
+                        toPrint += Utils.printNodeInfos(infos);
                     });
             });
 
-            return p;
+            return p.then(() => toPrint);
         })
         .catch(e => log.error(LOG_PREFIX, e));
 }
 
 if (program.F === undefined) {
-    return printStatus();
+    return printStatus().then(toPrint => process.stdout.write(toPrint));
 } else {
-    process.stdout.write('\033c');
+    // process.stdout.write('\033c');
     return printLoop();
 }
 
 function printLoop() {
     printStatus()
-        .then(() => {
+        .then(toPrint => {
+            process.stdout.write(toPrint);
+            process.stdout.moveCursor(0, -1 * toPrint.split('\n').length + 1);
+
             setTimeout(() => {
-                process.stdout.write('\033c');
                 printLoop();
             }, 500);
         });

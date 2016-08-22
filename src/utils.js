@@ -14,27 +14,30 @@ module.exports = class Utils {
 
     static printNodeInfos(infos) {
         let hashrate = Utils.readableNumber(infos.hashrate);
+        let toPrint = '';
 
-        process.stdout.write(`> ${chalk.green.bold(infos.name)} @ ${infos.ip}:\n`);
+        toPrint += `> ${chalk.green.bold(infos.name)} @ ${infos.ip}:\n`;
 
-        process.stdout.write('  ');
-        process.stdout.write(`Peers: ${chalk.bold(infos.peers)} - `);
-        process.stdout.write(`Blocks: ${chalk.bold(infos.blockNumber)} - `);
-        process.stdout.write(`Hashrate: ${chalk.bold(hashrate.number)} ${hashrate.prefix}H/s`);
-        process.stdout.write('\n');
+        toPrint += '  ';
+        toPrint += `Peers: ${chalk.bold(infos.peers)} - `;
+        toPrint += `Blocks: ${chalk.bold(infos.blockNumber)} - `;
+        toPrint += `Hashrate: ${chalk.bold(hashrate.number)} ${hashrate.prefix}H/s`;
+        toPrint += '\n';
 
-        process.stdout.write('  Accounts:\n');
+        toPrint += '  Accounts:\n';
 
         infos.accounts.forEach(account => {
             let balance = Utils.readableNumber(account.balance);
 
-            process.stdout.write('    * ');
-            process.stdout.write(`${chalk.yellow(account.address)}  `);
-            process.stdout.write(`${chalk.bold(balance.number)} ${balance.prefix}ETH`);
-            process.stdout.write('\n');
+            toPrint += '    * ';
+            toPrint += `${chalk.yellow(account.address)}  `;
+            toPrint += `${chalk.bold(balance.number)} ${balance.prefix}ETH`;
+            toPrint += '\n';
         });
 
-        process.stdout.write('\n');
+        toPrint += '\n';
+
+        return toPrint;
     }
 
     static readableNumber(number) {

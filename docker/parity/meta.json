@@ -1,5 +1,5 @@
 {
-    "version": 3,
+    "version": 4,
     "files": [
         { "path": "../morden.json", "name": "morden.json" }
     ],
