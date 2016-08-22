@@ -11,6 +11,7 @@ module.exports = class Ethereum {
             { name: 'net.getPeerCount', key: 'peers' },
             { name: 'eth.getBlockNumber', key: 'blockNumber' },
             { name: 'eth.getHashrate', key: 'hashrate' },
+            { name: 'eth.getGasPrice', key: 'gasprice' },
             { name: 'eth.getAccounts', key: 'accounts' }
         ];
 

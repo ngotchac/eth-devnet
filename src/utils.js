@@ -1,5 +1,6 @@
 let chalk = require('chalk'),
     path = require('path'),
+    Web3 = require('web3'),
     os = require('os');
 
 module.exports = class Utils {
@@ -21,13 +22,17 @@ module.exports = class Utils {
         toPrint += '  ';
         toPrint += `Peers: ${chalk.bold(infos.peers)} - `;
         toPrint += `Blocks: ${chalk.bold(infos.blockNumber)} - `;
+
+        let gasprice = Web3.prototype.fromWei(infos.gasprice, 'szabo');
+        toPrint += `Gas Price: ${chalk.bold(gasprice)} - `;
         toPrint += `Hashrate: ${chalk.bold(hashrate.number)} ${hashrate.prefix}H/s`;
         toPrint += '\n';
 
         toPrint += '  Accounts:\n';
 
         infos.accounts.forEach(account => {
-            let balance = Utils.readableNumber(account.balance);
+            let ethBalance = Web3.prototype.fromWei(account.balance, 'ether');
+            let balance = Utils.readableNumber(ethBalance);
 
             toPrint += '    * ';
             toPrint += `${chalk.yellow(account.address)}  `;
