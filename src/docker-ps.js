@@ -255,10 +255,13 @@ module.exports = class DockerPs {
         return new Promise((resolve, reject) => {
             container.stop(err => {
                 // Error 304 = already stopped
-                if (err && err.statusCode !== 304) return reject(err);
+                if (err && err.statusCode !== 304 && err.statusCode !== 404) {
+                    return reject(err);
+                }
 
                 container.remove(err => {
-                    if (err) return reject(err);
+                    // If the container doesn't exist, that's ok
+                    if (err && err.statusCode !== 404) return reject(err);
                     return resolve();
                 });
             });
