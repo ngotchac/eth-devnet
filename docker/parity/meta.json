@@ -6,7 +6,7 @@
     "Cmd": [
         "--chain", "/build/morden.json",
         "--keys-path", "/parity/keys",
-        "--jsonrpc-cors", "\"*\"",
+        "--rpccorsdomain", "*",
         "--tx-gas-limit", "9999999999999999999999",
         "--gas-floor-target", "10",
         "--gas-cap", "999999999999999999999"
