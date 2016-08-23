@@ -209,8 +209,7 @@ module.exports = class DockerPs {
                             // Start the miner
                             log.info(LOG_PREFIX, `starting the miner #${i}`);
 
-                            let nodeIpIdx = Math.floor(Math.random() * ips.length);
-                            let nodeIp = ips.splice(nodeIpIdx, 1)[0];
+                            let nodeIp = ips.splice(0, 1)[0];
 
                             return DockerPs
                                 .startContainer(ip, {
